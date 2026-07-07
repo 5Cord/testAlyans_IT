@@ -32,6 +32,26 @@ export function unwrapRing(ring: LngLat[]): LngLat[] {
   return result;
 }
 
+export interface NormalizedCoords {
+  coords: LngLat[];
+  crossesAntimeridian: boolean;
+}
+
+// загоняет долготы обратно в [-180, 180]
+export function normalizeAntimeridian(coords: LngLat[]): NormalizedCoords {
+  const normalized: LngLat[] = coords.map(([lng, lat]) => {
+    let result = lng;
+    while (result > 180) result -= 360;
+    while (result < -180) result += 360;
+    return [result, lat];
+  });
+
+  return {
+    coords: normalized,
+    crossesAntimeridian: crossesAntimeridian(normalized),
+  };
+}
+
 export function polygonBounds(polygon: Polygon): [LngLat, LngLat] {
   const ring = unwrapRing(polygon.coordinates[0] as LngLat[]);
   let west = Infinity;
