@@ -1,4 +1,4 @@
-import type { LngLat } from '@/shared/lib';
+import { normalizeAntimeridian, type LngLat } from '@/shared/lib';
 
 export function validateName(name: string): string | null {
   if (!name.trim()) return 'Введите название полигона';
@@ -12,10 +12,10 @@ export function validateLatitude(value: string): string | null {
   return null;
 }
 
+// долгота может выходить за ±180 (в ТЗ пример с 204.96) — приводим к диапазону при отправке
 export function validateLongitude(value: string): string | null {
   const num = Number(value.trim().replace(',', '.'));
   if (!value.trim() || Number.isNaN(num)) return 'Долгота должна быть числом';
-  if (num < -180 || num > 180) return 'Долгота должна быть от -180 до 180';
   return null;
 }
 
@@ -40,9 +40,6 @@ export function parsePointsText(text: string): { points: LngLat[] } | { error: s
     if (lat < -90 || lat > 90) {
       return { error: `Строка ${i + 1}: широта должна быть от -90 до 90` };
     }
-    if (lng < -180 || lng > 180) {
-      return { error: `Строка ${i + 1}: долгота должна быть от -180 до 180` };
-    }
     points.push([lng, lat]);
   }
 
@@ -50,5 +47,5 @@ export function parsePointsText(text: string): { points: LngLat[] } | { error: s
     return { error: 'Нужно минимум 3 точки для полигона' };
   }
 
-  return { points };
+  return { points: normalizeAntimeridian(points).coords };
 }
