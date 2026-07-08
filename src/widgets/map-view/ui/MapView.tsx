@@ -4,11 +4,13 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import { useQuery } from '@tanstack/react-query';
 import type { FeatureCollection } from 'geojson';
 import { polygonApi, polygonKeys, type PolygonFeature } from '@/entities/polygon';
+import { useSelectedPolygon } from '@/features/show-polygon-detail';
 import { MAP_STYLE_URL } from '@/shared/config';
-import { unwrapRing, type LngLat } from '@/shared/lib';
+import { polygonBounds, unwrapRing, type LngLat } from '@/shared/lib';
 import styles from './MapView.module.css';
 
 const POLYGONS_SOURCE = 'polygons';
+const SELECTED_SOURCE = 'selected-polygon';
 
 const EMPTY_COLLECTION: FeatureCollection = { type: 'FeatureCollection', features: [] };
 
@@ -35,6 +37,8 @@ export function MapView() {
     queryKey: polygonKeys.list(),
     queryFn: polygonApi.getPolygons,
   });
+
+  const selected = useSelectedPolygon((s) => s.selected);
 
   useEffect(() => {
     if (!mapContainer.current) return;
@@ -68,6 +72,25 @@ export function MapView() {
           'line-width': 2,
         },
       });
+      map.addSource(SELECTED_SOURCE, { type: 'geojson', data: EMPTY_COLLECTION });
+      map.addLayer({
+        id: 'selected-fill',
+        type: 'fill',
+        source: SELECTED_SOURCE,
+        paint: {
+          'fill-color': '#f59e0b',
+          'fill-opacity': 0.35,
+        },
+      });
+      map.addLayer({
+        id: 'selected-outline',
+        type: 'line',
+        source: SELECTED_SOURCE,
+        paint: {
+          'line-color': '#d97706',
+          'line-width': 3,
+        },
+      });
       setIsMapReady(true);
     });
 
@@ -84,6 +107,22 @@ export function MapView() {
     const source = map.getSource(POLYGONS_SOURCE) as GeoJSONSource | undefined;
     source?.setData(toDisplayCollection(polygons));
   }, [polygons, isMapReady]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !isMapReady) return;
+    const source = map.getSource(SELECTED_SOURCE) as GeoJSONSource | undefined;
+    if (!source) return;
+
+    if (!selected) {
+      source.setData(EMPTY_COLLECTION);
+      return;
+    }
+
+    source.setData(toDisplayCollection([selected]));
+    const [southWest, northEast] = polygonBounds(selected.geometry);
+    map.fitBounds([southWest, northEast], { padding: 80, maxZoom: 8 });
+  }, [selected, isMapReady]);
 
   return <div ref={mapContainer} className={styles.map} />;
 }

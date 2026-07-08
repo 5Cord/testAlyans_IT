@@ -1,6 +1,7 @@
 import { Providers } from './providers';
 import { MapView } from '@/widgets/map-view';
 import { PolygonForm } from '@/widgets/polygon-form';
+import { PolygonTable } from '@/widgets/polygon-table';
 import styles from './App.module.css';
 
 export function App() {
@@ -10,6 +11,9 @@ export function App() {
         <MapView />
         <aside className={styles.panel}>
           <PolygonForm />
+        </aside>
+        <aside className={styles.panelRight}>
+          <PolygonTable />
         </aside>
       </div>
     </Providers>
