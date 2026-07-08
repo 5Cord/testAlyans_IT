@@ -1,6 +1,5 @@
-import booleanIntersects from '@turf/boolean-intersects';
 import { MOCK_API_DELAY_MS } from '@/shared/config';
-import { closeRing, crossesAntimeridian, type LngLat } from '@/shared/lib';
+import { closeRing, crossesAntimeridian, polygonsIntersect, type LngLat } from '@/shared/lib';
 import type {
   CreatePolygonInput,
   CreatePolygonResult,
@@ -71,7 +70,9 @@ export const polygonsMockApi = {
   async createPolygon(input: CreatePolygonInput): Promise<CreatePolygonResult> {
     await delay();
     const feature = buildFeature(input.name, input.coordinates);
-    const conflicts = polygons.filter((existing) => booleanIntersects(existing, feature));
+    const conflicts = polygons.filter((existing) =>
+      polygonsIntersect(existing.geometry, feature.geometry),
+    );
 
     if (conflicts.length > 0) {
       const record: RejectedPolygonRecord = {

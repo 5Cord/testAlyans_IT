@@ -1,5 +1,6 @@
+import type { Polygon } from 'geojson';
 import { describe, expect, it } from 'vitest';
-import { normalizeAntimeridian, type LngLat } from './geo';
+import { closeRing, normalizeAntimeridian, polygonsIntersect, type LngLat } from './geo';
 
 describe('normalizeAntimeridian', () => {
   it('переводит долготы >180° в диапазон [-180, 180] и ставит crosses=true (пример из ТЗ)', () => {
@@ -70,5 +71,80 @@ describe('normalizeAntimeridian', () => {
 
     expect(coords).toEqual([]);
     expect(crossesAntimeridian).toBe(false);
+  });
+});
+
+describe('polygonsIntersect', () => {
+  const polygon = (points: LngLat[]): Polygon => ({
+    type: 'Polygon',
+    coordinates: [closeRing(points)],
+  });
+
+  // кольцо через антимеридиан: 170 → -170
+  const bering = polygon([
+    [170, 60],
+    [-170, 60],
+    [-170, 68],
+    [170, 68],
+  ]);
+
+  it('полигон вдали от антимеридиана не задевает полигон через антимеридиан', () => {
+    const piter = polygon([
+      [30.2, 60.08],
+      [30.55, 60.02],
+      [30.55, 59.75],
+      [30.35, 59.68],
+      [30.0, 59.7],
+      [29.75, 59.9],
+    ]);
+
+    expect(polygonsIntersect(bering, piter)).toBe(false);
+  });
+
+  it('находит пересечение с западной (отрицательной) стороны антимеридиана', () => {
+    const insideWest = polygon([
+      [-175, 62],
+      [-172, 62],
+      [-172, 66],
+      [-175, 66],
+    ]);
+
+    expect(polygonsIntersect(bering, insideWest)).toBe(true);
+    expect(polygonsIntersect(insideWest, bering)).toBe(true);
+  });
+
+  it('находит пересечение с восточной стороны антимеридиана', () => {
+    const insideEast = polygon([
+      [172, 62],
+      [176, 62],
+      [176, 66],
+      [172, 66],
+    ]);
+
+    expect(polygonsIntersect(bering, insideEast)).toBe(true);
+  });
+
+  it('обычные полигоны: пересекающиеся и нет', () => {
+    const a = polygon([
+      [0, 0],
+      [10, 0],
+      [10, 10],
+      [0, 10],
+    ]);
+    const b = polygon([
+      [5, 5],
+      [15, 5],
+      [15, 15],
+      [5, 15],
+    ]);
+    const c = polygon([
+      [20, 20],
+      [25, 20],
+      [25, 25],
+      [20, 25],
+    ]);
+
+    expect(polygonsIntersect(a, b)).toBe(true);
+    expect(polygonsIntersect(a, c)).toBe(false);
   });
 });
