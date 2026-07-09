@@ -6,6 +6,7 @@ import {
 } from '@/entities/polygon';
 import { usePolygonDetail } from '@/features/show-polygon-detail';
 import { formatRing, type LngLat } from '@/shared/lib';
+import { CollapseCard } from '@/shared/ui';
 import styles from './IntersectionTable.module.css';
 
 export function IntersectionTable() {
@@ -36,11 +37,7 @@ export function IntersectionTable() {
   };
 
   return (
-    <section className={styles.card}>
-      <h2 className={styles.title}>
-        Отклонённые полигоны{rejected?.length ? ` (${rejected.length})` : ''}
-      </h2>
-
+    <CollapseCard title={`Таблица пересечений${rejected?.length ? ` (${rejected.length})` : ''}`}>
       {isPending && <p className={styles.hint}>Загрузка…</p>}
       {!isPending && !rejected?.length && <p className={styles.hint}>Отклонённых полигонов нет</p>}
 
@@ -74,6 +71,6 @@ export function IntersectionTable() {
           </table>
         </div>
       )}
-    </section>
+    </CollapseCard>
   );
 }

@@ -1,0 +1,21 @@
+.card {
+  padding: 16px;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+.summary {
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 600;
+  user-select: none;
+}
+
+.summary:hover {
+  color: #2563eb;
+}
+
+.body {
+  margin-top: 12px;
+}

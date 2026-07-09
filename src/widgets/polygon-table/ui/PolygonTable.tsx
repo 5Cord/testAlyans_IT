@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { polygonApi, polygonKeys } from '@/entities/polygon';
 import { usePolygonDetail } from '@/features/show-polygon-detail';
 import { formatRing, type LngLat } from '@/shared/lib';
+import { CollapseCard } from '@/shared/ui';
 import styles from './PolygonTable.module.css';
 
 export function PolygonTable() {
@@ -15,9 +16,7 @@ export function PolygonTable() {
   const selectedId = detail?.kind === 'polygon' ? detail.polygon.properties.id : undefined;
 
   return (
-    <section className={styles.card}>
-      <h2 className={styles.title}>Полигоны{polygons?.length ? ` (${polygons.length})` : ''}</h2>
-
+    <CollapseCard title={`Полигоны${polygons?.length ? ` (${polygons.length})` : ''}`}>
       {isPending && <p className={styles.hint}>Загрузка…</p>}
       {!isPending && !polygons?.length && <p className={styles.hint}>Пока нет ни одного полигона</p>}
 
@@ -55,6 +54,6 @@ export function PolygonTable() {
           </table>
         </div>
       )}
-    </section>
+    </CollapseCard>
   );
 }

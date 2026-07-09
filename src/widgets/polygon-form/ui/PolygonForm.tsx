@@ -24,6 +24,11 @@ export function PolygonForm() {
 
   const { mutate, isPending } = useCreatePolygon();
 
+  const { data: polygons } = useQuery({
+    queryKey: polygonKeys.list(),
+    queryFn: polygonApi.getPolygons,
+  });
+
   const handleAddPoint = () => {
     const latError = validateLatitude(lat);
     const lngError = validateLongitude(lng);
