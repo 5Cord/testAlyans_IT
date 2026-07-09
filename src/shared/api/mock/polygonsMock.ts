@@ -3,6 +3,7 @@ import { closeRing, crossesAntimeridian, polygonsIntersect, type LngLat } from '
 import type {
   CreatePolygonInput,
   CreatePolygonResult,
+  PolygonApi,
   PolygonFeature,
   RejectedPolygonRecord,
 } from '../types';
@@ -47,7 +48,7 @@ const polygons: PolygonFeature[] = [
 
 const rejected: RejectedPolygonRecord[] = [];
 
-export const polygonsMockApi = {
+export const polygonsMockApi: PolygonApi = {
   async getPolygons(): Promise<PolygonFeature[]> {
     await delay();
     return structuredClone(polygons);

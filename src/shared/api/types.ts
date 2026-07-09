@@ -23,3 +23,11 @@ export interface CreatePolygonInput {
 export type CreatePolygonResult =
   | { status: 'created'; polygon: PolygonFeature }
   | { status: 'rejected'; rejected: RejectedPolygonRecord };
+
+// контракт слоя api: сейчас его реализуют моки, потом — клиент к бэку
+export interface PolygonApi {
+  getPolygons(): Promise<PolygonFeature[]>;
+  getRejected(): Promise<RejectedPolygonRecord[]>;
+  searchByName(query: string): Promise<PolygonFeature[]>;
+  createPolygon(input: CreatePolygonInput): Promise<CreatePolygonResult>;
+}
