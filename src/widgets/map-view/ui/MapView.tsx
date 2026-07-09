@@ -4,13 +4,14 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import { useQuery } from '@tanstack/react-query';
 import type { FeatureCollection } from 'geojson';
 import { polygonApi, polygonKeys, type PolygonFeature } from '@/entities/polygon';
-import { useSelectedPolygon } from '@/features/show-polygon-detail';
+import { usePolygonDetail } from '@/features/show-polygon-detail';
 import { MAP_STYLE_URL } from '@/shared/config';
 import { polygonBounds, unwrapRing, type LngLat } from '@/shared/lib';
 import styles from './MapView.module.css';
 
 const POLYGONS_SOURCE = 'polygons';
 const SELECTED_SOURCE = 'selected-polygon';
+const REJECTED_SOURCE = 'rejected-polygon';
 
 const EMPTY_COLLECTION: FeatureCollection = { type: 'FeatureCollection', features: [] };
 
@@ -38,7 +39,7 @@ export function MapView() {
     queryFn: polygonApi.getPolygons,
   });
 
-  const selected = useSelectedPolygon((s) => s.selected);
+  const detail = usePolygonDetail((s) => s.detail);
 
   useEffect(() => {
     if (!mapContainer.current) return;
@@ -91,6 +92,25 @@ export function MapView() {
           'line-width': 3,
         },
       });
+      map.addSource(REJECTED_SOURCE, { type: 'geojson', data: EMPTY_COLLECTION });
+      map.addLayer({
+        id: 'rejected-fill',
+        type: 'fill',
+        source: REJECTED_SOURCE,
+        paint: {
+          'fill-color': '#dc2626',
+          'fill-opacity': 0.3,
+        },
+      });
+      map.addLayer({
+        id: 'rejected-outline',
+        type: 'line',
+        source: REJECTED_SOURCE,
+        paint: {
+          'line-color': '#b91c1c',
+          'line-width': 3,
+        },
+      });
       setIsMapReady(true);
     });
 
@@ -111,18 +131,31 @@ export function MapView() {
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !isMapReady) return;
-    const source = map.getSource(SELECTED_SOURCE) as GeoJSONSource | undefined;
-    if (!source) return;
+    const selectedSource = map.getSource(SELECTED_SOURCE) as GeoJSONSource | undefined;
+    const rejectedSource = map.getSource(REJECTED_SOURCE) as GeoJSONSource | undefined;
+    if (!selectedSource || !rejectedSource) return;
 
-    if (!selected) {
-      source.setData(EMPTY_COLLECTION);
+    if (!detail) {
+      selectedSource.setData(EMPTY_COLLECTION);
+      rejectedSource.setData(EMPTY_COLLECTION);
       return;
     }
 
-    source.setData(toDisplayCollection([selected]));
-    const [southWest, northEast] = polygonBounds(selected.geometry);
+    if (detail.kind === 'polygon') {
+      selectedSource.setData(toDisplayCollection([detail.polygon]));
+      rejectedSource.setData(EMPTY_COLLECTION);
+      const [southWest, northEast] = polygonBounds(detail.polygon.geometry);
+      map.fitBounds([southWest, northEast], { padding: 80, maxZoom: 8 });
+      return;
+    }
+
+    // отклонённый красным, пересечённые оранжевым;
+    // центрируемся по отклонённому — конфликтующие пересекают его, значит рядом
+    selectedSource.setData(toDisplayCollection(detail.conflicts));
+    rejectedSource.setData(toDisplayCollection([detail.rejected]));
+    const [southWest, northEast] = polygonBounds(detail.rejected.geometry);
     map.fitBounds([southWest, northEast], { padding: 80, maxZoom: 8 });
-  }, [selected, isMapReady]);
+  }, [detail, isMapReady]);
 
   return <div ref={mapContainer} className={styles.map} />;
 }

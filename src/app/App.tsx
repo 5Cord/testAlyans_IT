@@ -1,4 +1,5 @@
 import { Providers } from './providers';
+import { IntersectionTable } from '@/widgets/intersection-table';
 import { MapView } from '@/widgets/map-view';
 import { PolygonForm } from '@/widgets/polygon-form';
 import { PolygonTable } from '@/widgets/polygon-table';
@@ -14,6 +15,7 @@ export function App() {
         </aside>
         <aside className={styles.panelRight}>
           <PolygonTable />
+          <IntersectionTable />
         </aside>
       </div>
     </Providers>

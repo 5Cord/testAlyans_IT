@@ -22,7 +22,7 @@
 
 .tableWrap {
   overflow-y: auto;
-  max-height: 40vh;
+  max-height: 30vh;
 }
 
 .table {
@@ -58,20 +58,11 @@
 
 .selectedRow,
 .table tbody tr.selectedRow:hover {
-  background: #dbeafe;
+  background: #fee2e2;
 }
 
 .coords {
   color: #6b7280;
   white-space: pre-line;
   font-variant-numeric: tabular-nums;
-}
-
-.crossYes {
-  color: #b45309;
-  font-weight: 600;
-}
-
-.crossNo {
-  color: #9ca3af;
 }

@@ -1,18 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
-import { polygonApi, polygonKeys, type PolygonFeature } from '@/entities/polygon';
-import { useSelectedPolygon } from '@/features/show-polygon-detail';
-import type { LngLat } from '@/shared/lib';
+import { polygonApi, polygonKeys } from '@/entities/polygon';
+import { usePolygonDetail } from '@/features/show-polygon-detail';
+import { formatRing, type LngLat } from '@/shared/lib';
 import styles from './PolygonTable.module.css';
-
-// срезаем хвосты float-арифметики вида -155.04000000000002
-const round = (n: number) => Math.round(n * 1e6) / 1e6;
-
-// без замыкающей точки, в порядке «широта, долгота» — как вводится в форме
-function formatCoords(feature: PolygonFeature): string {
-  const ring = feature.geometry.coordinates[0] as LngLat[];
-  const points = ring.length > 1 ? ring.slice(0, -1) : ring;
-  return points.map(([lng, lat]) => `${round(lat)}, ${round(lng)}`).join('; ');
-}
 
 export function PolygonTable() {
   const { data: polygons, isPending } = useQuery({
@@ -20,12 +10,13 @@ export function PolygonTable() {
     queryFn: polygonApi.getPolygons,
   });
 
-  const selected = useSelectedPolygon((s) => s.selected);
-  const select = useSelectedPolygon((s) => s.select);
+  const detail = usePolygonDetail((s) => s.detail);
+  const selectPolygon = usePolygonDetail((s) => s.selectPolygon);
+  const selectedId = detail?.kind === 'polygon' ? detail.polygon.properties.id : undefined;
 
   return (
     <section className={styles.card}>
-      <h2 className={styles.title}>Полигоны</h2>
+      <h2 className={styles.title}>Полигоны{polygons?.length ? ` (${polygons.length})` : ''}</h2>
 
       {isPending && <p className={styles.hint}>Загрузка…</p>}
       {!isPending && !polygons?.length && <p className={styles.hint}>Пока нет ни одного полигона</p>}
@@ -36,7 +27,7 @@ export function PolygonTable() {
             <thead>
               <tr>
                 <th>Название</th>
-                <th>Координаты</th>
+                <th>Координаты (шир, долг)</th>
                 <th>Антимеридиан</th>
               </tr>
             </thead>
@@ -44,14 +35,20 @@ export function PolygonTable() {
               {polygons.map((polygon) => (
                 <tr
                   key={polygon.properties.id}
-                  className={
-                    polygon.properties.id === selected?.properties.id ? styles.selectedRow : undefined
-                  }
-                  onClick={() => select(polygon)}
+                  className={polygon.properties.id === selectedId ? styles.selectedRow : undefined}
+                  onClick={() => selectPolygon(polygon)}
                 >
                   <td>{polygon.properties.name}</td>
-                  <td className={styles.coords}>{formatCoords(polygon)}</td>
-                  <td>{polygon.properties.crossesAntimeridian ? 'True' : 'False'}</td>
+                  <td className={styles.coords}>
+                    {formatRing(polygon.geometry.coordinates[0] as LngLat[])}
+                  </td>
+                  <td>
+                    {polygon.properties.crossesAntimeridian ? (
+                      <span className={styles.crossYes}>Пересекает</span>
+                    ) : (
+                      <span className={styles.crossNo}>—</span>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
