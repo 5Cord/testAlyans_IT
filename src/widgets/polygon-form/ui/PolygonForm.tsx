@@ -1,4 +1,6 @@
 import { useState, type FormEvent } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { polygonApi, polygonKeys } from '@/entities/polygon';
 import {
   parsePointsText,
   useCreatePolygon,
@@ -6,6 +8,7 @@ import {
   validateLongitude,
   validateName,
 } from '@/features/create-polygon';
+import { CollapseCard } from '@/shared/ui';
 import styles from './PolygonForm.module.css';
 
 interface FormErrors {
@@ -48,7 +51,8 @@ export function PolygonForm() {
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
 
-    const nameError = validateName(name);
+    const takenNames = polygons?.map((p) => p.properties.name) ?? [];
+    const nameError = validateName(name, takenNames);
     const parsed = parsePointsText(pointsText);
     const pointsError = 'error' in parsed ? parsed.error : undefined;
 
@@ -72,68 +76,68 @@ export function PolygonForm() {
   };
 
   return (
-    <form className={styles.form} onSubmit={handleSubmit} noValidate>
-      <h2 className={styles.title}>Новый полигон</h2>
-
-      <label className={styles.field}>
-        <span className={styles.label}>Название</span>
-        <input
-          className={styles.input}
-          type="text"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="Например, Тестовый полигон"
-        />
-        {errors.name && <span className={styles.error}>{errors.name}</span>}
-      </label>
-
-      <div className={styles.coords}>
+    <CollapseCard title="Новый полигон">
+      <form className={styles.form} onSubmit={handleSubmit} noValidate>
         <label className={styles.field}>
-          <span className={styles.label}>Широта</span>
+          <span className={styles.label}>Название</span>
           <input
             className={styles.input}
             type="text"
-            inputMode="decimal"
-            value={lat}
-            onChange={(e) => setLat(e.target.value)}
-            placeholder="55.75"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Например, Тестовый полигон"
           />
-          {errors.lat && <span className={styles.error}>{errors.lat}</span>}
+          {errors.name && <span className={styles.error}>{errors.name}</span>}
         </label>
+
+        <div className={styles.coords}>
+          <label className={styles.field}>
+            <span className={styles.label}>Широта</span>
+            <input
+              className={styles.input}
+              type="text"
+              inputMode="decimal"
+              value={lat}
+              onChange={(e) => setLat(e.target.value)}
+              placeholder="55.75"
+            />
+            {errors.lat && <span className={styles.error}>{errors.lat}</span>}
+          </label>
+
+          <label className={styles.field}>
+            <span className={styles.label}>Долгота</span>
+            <input
+              className={styles.input}
+              type="text"
+              inputMode="decimal"
+              value={lng}
+              onChange={(e) => setLng(e.target.value)}
+              placeholder="37.62"
+            />
+            {errors.lng && <span className={styles.error}>{errors.lng}</span>}
+          </label>
+        </div>
+
+        <button type="button" className={styles.secondaryButton} onClick={handleAddPoint}>
+          Добавить
+        </button>
 
         <label className={styles.field}>
-          <span className={styles.label}>Долгота</span>
-          <input
-            className={styles.input}
-            type="text"
-            inputMode="decimal"
-            value={lng}
-            onChange={(e) => setLng(e.target.value)}
-            placeholder="37.62"
+          <span className={styles.label}>Координаты (широта, долгота — по строке на точку)</span>
+          <textarea
+            className={styles.textarea}
+            rows={6}
+            value={pointsText}
+            onChange={(e) => setPointsText(e.target.value)}
+            placeholder={'55.75, 37.62\n55.80, 37.70\n55.70, 37.75'}
           />
-          {errors.lng && <span className={styles.error}>{errors.lng}</span>}
+          {errors.points && <span className={styles.error}>{errors.points}</span>}
         </label>
-      </div>
 
-      <button type="button" className={styles.secondaryButton} onClick={handleAddPoint}>
-        Добавить
-      </button>
-
-      <label className={styles.field}>
-        <span className={styles.label}>Координаты (широта, долгота — по строке на точку)</span>
-        <textarea
-          className={styles.textarea}
-          rows={6}
-          value={pointsText}
-          onChange={(e) => setPointsText(e.target.value)}
-          placeholder={'55.75, 37.62\n55.80, 37.70\n55.70, 37.75'}
-        />
-        {errors.points && <span className={styles.error}>{errors.points}</span>}
-      </label>
-
-      <button type="submit" className={styles.submitButton} disabled={isPending}>
-        {isPending ? 'Сохранение…' : 'Submit'}
-      </button>
-    </form>
+        <button type="submit" className={styles.submitButton} disabled={isPending}>
+          {isPending ? 'Сохранение…' : 'Submit'}
+        </button>
+      </form>
+    </CollapseCard>
   );
 }

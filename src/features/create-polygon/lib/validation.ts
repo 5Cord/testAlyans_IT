@@ -1,7 +1,11 @@
 import { normalizeAntimeridian, type LngLat } from '@/shared/lib';
 
-export function validateName(name: string): string | null {
+export function validateName(name: string, takenNames: string[]): string | null {
   if (!name.trim()) return 'Введите название полигона';
+  const normalized = name.trim().toLowerCase();
+  if (takenNames.some((taken) => taken.trim().toLowerCase() === normalized)) {
+    return 'Полигон с таким названием уже есть';
+  }
   return null;
 }
 
