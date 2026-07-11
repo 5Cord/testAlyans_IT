@@ -8,14 +8,7 @@
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
 }
 
-.row {
-  display: flex;
-  gap: 8px;
-}
-
 .input {
-  flex: 1;
-  min-width: 0;
   padding: 8px 10px;
   border: 1px solid #d1d5db;
   border-radius: 8px;
@@ -27,26 +20,6 @@
   outline: 2px solid #3b82f6;
   outline-offset: -1px;
   border-color: transparent;
-}
-
-.button {
-  padding: 8px 14px;
-  border: none;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  background: #2563eb;
-  color: #ffffff;
-  cursor: pointer;
-}
-
-.button:hover {
-  background: #1d4ed8;
-}
-
-.button:disabled {
-  background: #93c5fd;
-  cursor: default;
 }
 
 .hint {
