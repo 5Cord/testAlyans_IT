@@ -43,9 +43,9 @@ export function PolygonTable() {
                   </td>
                   <td>
                     {polygon.properties.crossesAntimeridian ? (
-                      <span className={styles.crossYes}>Пересекает</span>
+                      <span className={styles.crossYes}>True</span>
                     ) : (
-                      <span className={styles.crossNo}>—</span>
+                      <span className={styles.crossNo}>False</span>
                     )}
                   </td>
                 </tr>
