@@ -13,6 +13,7 @@
   "dependencies": {
     "@tanstack/react-query": "^5.101.2",
     "@turf/boolean-intersects": "^7.3.5",
+    "@turf/line-intersect": "^7.3.5",
     "maplibre-gl": "^5.24.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",

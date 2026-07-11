@@ -1,4 +1,5 @@
 import booleanIntersects from '@turf/boolean-intersects';
+import lineIntersect from '@turf/line-intersect';
 import type { Polygon } from 'geojson';
 
 export type LngLat = [number, number];
@@ -24,10 +25,9 @@ export function unwrapRing(ring: LngLat[]): LngLat[] {
   if (ring.length === 0) return ring;
   const result: LngLat[] = [ring[0]];
   for (let i = 1; i < ring.length; i++) {
-    let lng = ring[i][0];
+    const raw = ring[i][0];
     const prevLng = result[i - 1][0];
-    while (lng - prevLng > 180) lng -= 360;
-    while (lng - prevLng < -180) lng += 360;
+    const lng = raw - 360 * Math.round((raw - prevLng) / 360);
     result.push([lng, ring[i][1]]);
   }
   return result;
@@ -38,14 +38,15 @@ export interface NormalizedCoords {
   crossesAntimeridian: boolean;
 }
 
+// остаток от деления вместо цикла — не зависнет на экстремальных значениях
+function wrapLongitude(lng: number): number {
+  if (lng >= -180 && lng <= 180) return lng;
+  return ((((lng + 180) % 360) + 360) % 360) - 180;
+}
+
 // загоняет долготы обратно в [-180, 180]
 export function normalizeAntimeridian(coords: LngLat[]): NormalizedCoords {
-  const normalized: LngLat[] = coords.map(([lng, lat]) => {
-    let result = lng;
-    while (result > 180) result -= 360;
-    while (result < -180) result += 360;
-    return [result, lat];
-  });
+  const normalized: LngLat[] = coords.map(([lng, lat]) => [wrapLongitude(lng), lat]);
 
   return {
     coords: normalized,
@@ -75,6 +76,21 @@ export function polygonsIntersect(a: Polygon, b: Polygon): boolean {
   const planarA = unwrapPolygon(a);
   const planarB = unwrapPolygon(b);
   return [-360, 0, 360].some((delta) => booleanIntersects(planarA, shiftPolygon(planarB, delta)));
+}
+
+// точки, где границы двух полигонов пересекают друг друга;
+// сдвиги ±360 — по той же причине, что и в polygonsIntersect
+export function intersectionPoints(a: Polygon, b: Polygon): LngLat[] {
+  const planarA = unwrapPolygon(a);
+  const planarB = unwrapPolygon(b);
+  const points = new Map<string, LngLat>();
+  for (const delta of [-360, 0, 360]) {
+    for (const feature of lineIntersect(planarA, shiftPolygon(planarB, delta)).features) {
+      const [lng, lat] = feature.geometry.coordinates as LngLat;
+      points.set(`${lng.toFixed(9)},${lat.toFixed(9)}`, [lng, lat]);
+    }
+  }
+  return [...points.values()];
 }
 
 export function polygonBounds(polygon: Polygon): [LngLat, LngLat] {

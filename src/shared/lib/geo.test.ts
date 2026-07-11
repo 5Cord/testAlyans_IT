@@ -1,6 +1,12 @@
 import type { Polygon } from 'geojson';
 import { describe, expect, it } from 'vitest';
-import { closeRing, normalizeAntimeridian, polygonsIntersect, type LngLat } from './geo';
+import {
+  closeRing,
+  intersectionPoints,
+  normalizeAntimeridian,
+  polygonsIntersect,
+  type LngLat,
+} from './geo';
 
 describe('normalizeAntimeridian', () => {
   it('переводит долготы >180° в диапазон [-180, 180] и ставит crosses=true (пример из ТЗ)', () => {
@@ -66,6 +72,19 @@ describe('normalizeAntimeridian', () => {
     expect(crossesAntimeridian).toBe(true);
   });
 
+  it('справляется с экстремальными долготами без зависания', () => {
+    const { coords } = normalizeAntimeridian([
+      [1e20, 10],
+      [-1e20, 15],
+      [123456789, 20],
+    ]);
+
+    for (const [lng] of coords) {
+      expect(lng).toBeGreaterThanOrEqual(-180);
+      expect(lng).toBeLessThanOrEqual(180);
+    }
+  });
+
   it('возвращает пустой массив как есть', () => {
     const { coords, crossesAntimeridian } = normalizeAntimeridian([]);
 
@@ -74,19 +93,20 @@ describe('normalizeAntimeridian', () => {
   });
 });
 
-describe('polygonsIntersect', () => {
-  const polygon = (points: LngLat[]): Polygon => ({
-    type: 'Polygon',
-    coordinates: [closeRing(points)],
-  });
+const polygon = (points: LngLat[]): Polygon => ({
+  type: 'Polygon',
+  coordinates: [closeRing(points)],
+});
 
-  // кольцо через антимеридиан: 170 → -170
-  const bering = polygon([
-    [170, 60],
-    [-170, 60],
-    [-170, 68],
-    [170, 68],
-  ]);
+// кольцо через антимеридиан: 170 → -170
+const bering = polygon([
+  [170, 60],
+  [-170, 60],
+  [-170, 68],
+  [170, 68],
+]);
+
+describe('polygonsIntersect', () => {
 
   it('полигон вдали от антимеридиана не задевает полигон через антимеридиан', () => {
     const piter = polygon([
@@ -146,5 +166,61 @@ describe('polygonsIntersect', () => {
 
     expect(polygonsIntersect(a, b)).toBe(true);
     expect(polygonsIntersect(a, c)).toBe(false);
+  });
+});
+
+describe('intersectionPoints', () => {
+  it('находит точки, где границы квадратов пересекаются', () => {
+    const a = polygon([
+      [0, 0],
+      [10, 0],
+      [10, 10],
+      [0, 10],
+    ]);
+    const b = polygon([
+      [5, 5],
+      [15, 5],
+      [15, 15],
+      [5, 15],
+    ]);
+
+    const points = intersectionPoints(a, b);
+
+    expect(points).toHaveLength(2);
+    expect(points).toContainEqual([10, 5]);
+    expect(points).toContainEqual([5, 10]);
+  });
+
+  it('пусто, если полигоны не касаются', () => {
+    const a = polygon([
+      [0, 0],
+      [10, 0],
+      [10, 10],
+      [0, 10],
+    ]);
+    const c = polygon([
+      [20, 20],
+      [25, 20],
+      [25, 25],
+      [20, 25],
+    ]);
+
+    expect(intersectionPoints(a, c)).toHaveLength(0);
+  });
+
+  it('находит пересечение границ через антимеридиан', () => {
+    const west = polygon([
+      [-175, 62],
+      [-172, 62],
+      [-172, 70],
+      [-175, 70],
+    ]);
+
+    const points = intersectionPoints(bering, west);
+
+    expect(points).toHaveLength(2);
+    for (const [, lat] of points) {
+      expect(lat).toBeCloseTo(68, 5);
+    }
   });
 });

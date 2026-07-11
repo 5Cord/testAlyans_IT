@@ -16,10 +16,11 @@ export function validateLatitude(value: string): string | null {
   return null;
 }
 
-// долгота может выходить за ±180 (в ТЗ пример с 204.96) — приводим к диапазону при отправке
+// долгота может выходить за ±180 (в ТЗ пример с 204.96), но в разумных пределах
 export function validateLongitude(value: string): string | null {
   const num = Number(value.trim().replace(',', '.'));
   if (!value.trim() || Number.isNaN(num)) return 'Долгота должна быть числом';
+  if (num < -360 || num > 360) return 'Долгота должна быть от -360 до 360';
   return null;
 }
 
@@ -43,6 +44,9 @@ export function parsePointsText(text: string): { points: LngLat[] } | { error: s
     }
     if (lat < -90 || lat > 90) {
       return { error: `Строка ${i + 1}: широта должна быть от -90 до 90` };
+    }
+    if (lng < -360 || lng > 360) {
+      return { error: `Строка ${i + 1}: долгота должна быть от -360 до 360` };
     }
     points.push([lng, lat]);
   }
