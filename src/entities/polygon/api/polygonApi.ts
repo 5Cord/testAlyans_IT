@@ -1,8 +1,8 @@
-import { polygonsMockApi } from '@/shared/api';
+import { polygonsHttpApi } from '@/shared/api';
 import type { PolygonApi } from '@/shared/api';
 
-// сейчас моки; при переходе на бэк сюда встанет http-реализация того же PolygonApi
-export const polygonApi: PolygonApi = polygonsMockApi;
+// ходим в бэк; моки (polygonsMockApi) остались на случай работы без него
+export const polygonApi: PolygonApi = polygonsHttpApi;
 
 export const polygonKeys = {
   all: ['polygons'] as const,

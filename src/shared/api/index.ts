@@ -1,3 +1,4 @@
+export { polygonsHttpApi } from './http/polygonsHttp';
 export { polygonsMockApi } from './mock/polygonsMock';
 export type {
   CreatePolygonInput,
