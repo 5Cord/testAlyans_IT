@@ -6,12 +6,13 @@ import type { FeatureCollection } from 'geojson';
 import { polygonApi, polygonKeys, type PolygonFeature } from '@/entities/polygon';
 import { usePolygonDetail } from '@/features/show-polygon-detail';
 import { MAP_STYLE_URL } from '@/shared/config';
-import { polygonBounds, unwrapRing, type LngLat } from '@/shared/lib';
+import { intersectionPoints, polygonBounds, unwrapRing, type LngLat } from '@/shared/lib';
 import styles from './MapView.module.css';
 
 const POLYGONS_SOURCE = 'polygons';
 const SELECTED_SOURCE = 'selected-polygon';
 const REJECTED_SOURCE = 'rejected-polygon';
+const INTERSECTIONS_SOURCE = 'intersection-points';
 
 const EMPTY_COLLECTION: FeatureCollection = { type: 'FeatureCollection', features: [] };
 
@@ -29,9 +30,22 @@ function toDisplayCollection(polygons: PolygonFeature[]): FeatureCollection {
   };
 }
 
+function toPointCollection(points: LngLat[]): FeatureCollection {
+  return {
+    type: 'FeatureCollection',
+    features: points.map((point) => ({
+      type: 'Feature',
+      properties: {},
+      geometry: { type: 'Point', coordinates: point },
+    })),
+  };
+}
+
 export function MapView() {
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
+  const popupRef = useRef<maplibregl.Popup | null>(null);
+  const polygonsRef = useRef<PolygonFeature[]>([]);
   const [isMapReady, setIsMapReady] = useState(false);
 
   const { data: polygons } = useQuery({
@@ -40,6 +54,7 @@ export function MapView() {
   });
 
   const detail = usePolygonDetail((s) => s.detail);
+  const selectPolygon = usePolygonDetail((s) => s.selectPolygon);
 
   useEffect(() => {
     if (!mapContainer.current) return;
@@ -111,19 +126,45 @@ export function MapView() {
           'line-width': 3,
         },
       });
+      map.addSource(INTERSECTIONS_SOURCE, { type: 'geojson', data: EMPTY_COLLECTION });
+      map.addLayer({
+        id: 'intersection-circles',
+        type: 'circle',
+        source: INTERSECTIONS_SOURCE,
+        paint: {
+          'circle-radius': 5,
+          'circle-color': '#b91c1c',
+          'circle-stroke-color': '#ffffff',
+          'circle-stroke-width': 2,
+        },
+      });
       setIsMapReady(true);
+    });
+
+    map.on('click', 'polygons-fill', (event) => {
+      const id = event.features?.[0]?.properties?.id;
+      const polygon = polygonsRef.current.find((p) => p.properties.id === id);
+      if (polygon) selectPolygon(polygon);
+    });
+    map.on('mouseenter', 'polygons-fill', () => {
+      map.getCanvas().style.cursor = 'pointer';
+    });
+    map.on('mouseleave', 'polygons-fill', () => {
+      map.getCanvas().style.cursor = '';
     });
 
     return () => {
       map.remove();
       mapRef.current = null;
+      popupRef.current = null;
       setIsMapReady(false);
     };
-  }, []);
+  }, [selectPolygon]);
 
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !isMapReady || !polygons) return;
+    polygonsRef.current = polygons;
     const source = map.getSource(POLYGONS_SOURCE) as GeoJSONSource | undefined;
     source?.setData(toDisplayCollection(polygons));
   }, [polygons, isMapReady]);
@@ -133,28 +174,51 @@ export function MapView() {
     if (!map || !isMapReady) return;
     const selectedSource = map.getSource(SELECTED_SOURCE) as GeoJSONSource | undefined;
     const rejectedSource = map.getSource(REJECTED_SOURCE) as GeoJSONSource | undefined;
-    if (!selectedSource || !rejectedSource) return;
+    const intersectionsSource = map.getSource(INTERSECTIONS_SOURCE) as GeoJSONSource | undefined;
+    if (!selectedSource || !rejectedSource || !intersectionsSource) return;
+
+    popupRef.current?.remove();
+    popupRef.current = null;
+
+    // подпись с названием над верхним краем полигона
+    const showName = (name: string, [southWest, northEast]: [LngLat, LngLat]) => {
+      popupRef.current = new maplibregl.Popup({ closeButton: false, closeOnClick: false })
+        .setLngLat([(southWest[0] + northEast[0]) / 2, northEast[1]])
+        .setText(name)
+        .addTo(map);
+    };
 
     if (!detail) {
       selectedSource.setData(EMPTY_COLLECTION);
       rejectedSource.setData(EMPTY_COLLECTION);
+      intersectionsSource.setData(EMPTY_COLLECTION);
       return;
     }
 
     if (detail.kind === 'polygon') {
       selectedSource.setData(toDisplayCollection([detail.polygon]));
       rejectedSource.setData(EMPTY_COLLECTION);
-      const [southWest, northEast] = polygonBounds(detail.polygon.geometry);
-      map.fitBounds([southWest, northEast], { padding: 80, maxZoom: 8 });
+      intersectionsSource.setData(EMPTY_COLLECTION);
+      const bounds = polygonBounds(detail.polygon.geometry);
+      showName(detail.polygon.properties.name, bounds);
+      map.fitBounds(bounds, { padding: 80, maxZoom: 8 });
       return;
     }
 
-    // отклонённый красным, пересечённые оранжевым;
+    // отклонённый красным, пересечённые оранжевым, точки пересечения границ кружками;
     // центрируемся по отклонённому — конфликтующие пересекают его, значит рядом
     selectedSource.setData(toDisplayCollection(detail.conflicts));
     rejectedSource.setData(toDisplayCollection([detail.rejected]));
-    const [southWest, northEast] = polygonBounds(detail.rejected.geometry);
-    map.fitBounds([southWest, northEast], { padding: 80, maxZoom: 8 });
+    intersectionsSource.setData(
+      toPointCollection(
+        detail.conflicts.flatMap((conflict) =>
+          intersectionPoints(detail.rejected.geometry, conflict.geometry),
+        ),
+      ),
+    );
+    const bounds = polygonBounds(detail.rejected.geometry);
+    showName(detail.rejected.properties.name, bounds);
+    map.fitBounds(bounds, { padding: 80, maxZoom: 8 });
   }, [detail, isMapReady]);
 
   return <div ref={mapContainer} className={styles.map} />;
