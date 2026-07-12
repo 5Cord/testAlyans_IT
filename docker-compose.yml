@@ -1,0 +1,11 @@
+services:
+  frontend:
+    build:
+      context: .
+      args:
+        # пусто = запросы относительными путями, их проксирует nginx
+        VITE_API_URL: ${VITE_API_URL:-}
+    ports:
+      - "3000:80"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
