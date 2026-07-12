@@ -25,15 +25,16 @@ export function IntersectionTable() {
   const shownId = detail?.kind === 'conflict' ? detail.rejected.properties.id : undefined;
 
   const conflictNames = (record: RejectedPolygonRecord) =>
-    record.conflictingIds
-      .map((id) => polygons?.find((p) => p.properties.id === id)?.properties.name ?? '—')
-      .join(', ');
+    record.conflicts.map((conflict) => conflict.name).join(', ');
 
   const handleRowClick = (record: RejectedPolygonRecord) => {
-    const conflicts = (polygons ?? []).filter((p) =>
-      record.conflictingIds.includes(p.properties.id),
+    const ids = record.conflicts.map((conflict) => conflict.id);
+    const conflicts = (polygons ?? []).filter((p) => ids.includes(p.properties.id));
+    showConflict(
+      record.feature,
+      conflicts,
+      record.conflicts.flatMap((conflict) => conflict.intersections),
     );
-    showConflict(record.feature, conflicts);
   };
 
   return (

@@ -4,6 +4,7 @@ import {
   closeRing,
   intersectionPoints,
   normalizeAntimeridian,
+  parseIntersectionCoords,
   polygonsIntersect,
   type LngLat,
 } from './geo';
@@ -166,6 +167,85 @@ describe('polygonsIntersect', () => {
 
     expect(polygonsIntersect(a, b)).toBe(true);
     expect(polygonsIntersect(a, c)).toBe(false);
+  });
+});
+
+describe('parseIntersectionCoords', () => {
+  it('пара чисел — точка', () => {
+    expect(parseIntersectionCoords([30.5, 60.1])).toEqual([
+      { type: 'Point', coordinates: [30.5, 60.1] },
+    ]);
+  });
+
+  it('список пар — линия', () => {
+    const line = [
+      [30, 60],
+      [31, 60],
+    ];
+
+    expect(parseIntersectionCoords(line)).toEqual([{ type: 'LineString', coordinates: line }]);
+  });
+
+  it('список колец — полигон (формат Polygon.coords из GEOS)', () => {
+    const rings = [
+      [
+        [30, 60],
+        [31, 60],
+        [31, 61],
+        [30, 60],
+      ],
+    ];
+
+    expect(parseIntersectionCoords(rings)).toEqual([{ type: 'Polygon', coordinates: rings }]);
+  });
+
+  it('мультиполигон — список полигонов', () => {
+    const polygonA = [
+      [
+        [0, 0],
+        [1, 0],
+        [1, 1],
+        [0, 0],
+      ],
+    ];
+    const polygonB = [
+      [
+        [5, 5],
+        [6, 5],
+        [6, 6],
+        [5, 5],
+      ],
+    ];
+
+    expect(parseIntersectionCoords([polygonA, polygonB])).toEqual([
+      { type: 'Polygon', coordinates: polygonA },
+      { type: 'Polygon', coordinates: polygonB },
+    ]);
+  });
+
+  it('коллекция: точка и полигон вперемешку', () => {
+    const point = [10, 10];
+    const rings = [
+      [
+        [0, 0],
+        [1, 0],
+        [1, 1],
+        [0, 0],
+      ],
+    ];
+
+    expect(parseIntersectionCoords([point, rings])).toEqual([
+      { type: 'Point', coordinates: point },
+      { type: 'Polygon', coordinates: rings },
+    ]);
+  });
+
+  it('мусор и пустые значения → пусто', () => {
+    expect(parseIntersectionCoords(undefined)).toEqual([]);
+    expect(parseIntersectionCoords(null)).toEqual([]);
+    expect(parseIntersectionCoords([])).toEqual([]);
+    expect(parseIntersectionCoords('coords')).toEqual([]);
+    expect(parseIntersectionCoords([['a', 'b']])).toEqual([]);
   });
 });
 

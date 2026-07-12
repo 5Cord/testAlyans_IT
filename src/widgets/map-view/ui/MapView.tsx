@@ -2,11 +2,11 @@ import { useEffect, useRef, useState } from 'react';
 import maplibregl, { type GeoJSONSource } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { useQuery } from '@tanstack/react-query';
-import type { FeatureCollection } from 'geojson';
+import type { FeatureCollection, Geometry } from 'geojson';
 import { polygonApi, polygonKeys, type PolygonFeature } from '@/entities/polygon';
 import { usePolygonDetail } from '@/features/show-polygon-detail';
 import { MAP_STYLE_URL } from '@/shared/config';
-import { intersectionPoints, polygonBounds, unwrapRing, type LngLat } from '@/shared/lib';
+import { polygonBounds, unwrapRing, type LngLat } from '@/shared/lib';
 import styles from './MapView.module.css';
 
 const POLYGONS_SOURCE = 'polygons';
@@ -30,13 +30,27 @@ function toDisplayCollection(polygons: PolygonFeature[]): FeatureCollection {
   };
 }
 
-function toPointCollection(points: LngLat[]): FeatureCollection {
+function unwrapGeometry(geometry: Geometry): Geometry {
+  if (geometry.type === 'Polygon') {
+    return {
+      type: 'Polygon',
+      coordinates: geometry.coordinates.map((ring) => unwrapRing(ring as LngLat[])),
+    };
+  }
+  if (geometry.type === 'LineString') {
+    return { type: 'LineString', coordinates: unwrapRing(geometry.coordinates as LngLat[]) };
+  }
+  return geometry;
+}
+
+// геометрии пересечения от backend2 (intersection_coords) — точки, линии и полигоны
+function toIntersectionCollection(geometries: Geometry[]): FeatureCollection {
   return {
     type: 'FeatureCollection',
-    features: points.map((point) => ({
+    features: geometries.map((geometry) => ({
       type: 'Feature',
       properties: {},
-      geometry: { type: 'Point', coordinates: point },
+      geometry: unwrapGeometry(geometry),
     })),
   };
 }
@@ -128,9 +142,30 @@ export function MapView() {
       });
       map.addSource(INTERSECTIONS_SOURCE, { type: 'geojson', data: EMPTY_COLLECTION });
       map.addLayer({
+        id: 'intersection-fill',
+        type: 'fill',
+        source: INTERSECTIONS_SOURCE,
+        filter: ['==', '$type', 'Polygon'],
+        paint: {
+          'fill-color': '#b91c1c',
+          'fill-opacity': 0.45,
+        },
+      });
+      map.addLayer({
+        id: 'intersection-lines',
+        type: 'line',
+        source: INTERSECTIONS_SOURCE,
+        filter: ['!=', '$type', 'Point'],
+        paint: {
+          'line-color': '#7f1d1d',
+          'line-width': 2,
+        },
+      });
+      map.addLayer({
         id: 'intersection-circles',
         type: 'circle',
         source: INTERSECTIONS_SOURCE,
+        filter: ['==', '$type', 'Point'],
         paint: {
           'circle-radius': 5,
           'circle-color': '#b91c1c',
@@ -205,17 +240,11 @@ export function MapView() {
       return;
     }
 
-    // отклонённый красным, пересечённые оранжевым, точки пересечения границ кружками;
+    // отклонённый красным, пересечённые оранжевым, области/точки пересечения — данные backend2;
     // центрируемся по отклонённому — конфликтующие пересекают его, значит рядом
     selectedSource.setData(toDisplayCollection(detail.conflicts));
     rejectedSource.setData(toDisplayCollection([detail.rejected]));
-    intersectionsSource.setData(
-      toPointCollection(
-        detail.conflicts.flatMap((conflict) =>
-          intersectionPoints(detail.rejected.geometry, conflict.geometry),
-        ),
-      ),
-    );
+    intersectionsSource.setData(toIntersectionCollection(detail.intersections));
     const bounds = polygonBounds(detail.rejected.geometry);
     showName(detail.rejected.properties.name, bounds);
     map.fitBounds(bounds, { padding: 80, maxZoom: 8 });

@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-toastify';
 import { polygonApi, polygonKeys } from '@/entities/polygon';
+import { ApiError } from '@/shared/api';
 
 export function useCreatePolygon() {
   const queryClient = useQueryClient();
@@ -18,8 +19,13 @@ export function useCreatePolygon() {
         queryClient.invalidateQueries({ queryKey: polygonKeys.rejected() });
       }
     },
-    onError: () => {
-      toast.error('Не удалось сохранить полигон. Попробуйте ещё раз');
+    onError: (error) => {
+      // текст ошибки бэка (например, «Территория с таким именем уже существует») показываем как есть
+      toast.error(
+        error instanceof ApiError
+          ? error.message
+          : 'Не удалось сохранить полигон. Попробуйте ещё раз',
+      );
     },
   });
 }

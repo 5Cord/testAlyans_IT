@@ -1,5 +1,11 @@
 import { MOCK_API_DELAY_MS } from '@/shared/config';
-import { closeRing, crossesAntimeridian, polygonsIntersect, type LngLat } from '@/shared/lib';
+import {
+  closeRing,
+  crossesAntimeridian,
+  intersectionPoints,
+  polygonsIntersect,
+  type LngLat,
+} from '@/shared/lib';
 import type {
   CreatePolygonInput,
   CreatePolygonResult,
@@ -78,7 +84,16 @@ export const polygonsMockApi: PolygonApi = {
     if (conflicts.length > 0) {
       const record: RejectedPolygonRecord = {
         feature,
-        conflictingIds: conflicts.map((p) => p.properties.id),
+        // DEV ONLY: в mock-режиме пересечения считает turf; в проде источник истины —
+        // backend2 (intersection_coords)
+        conflicts: conflicts.map((p) => ({
+          id: p.properties.id,
+          name: p.properties.name,
+          intersections: intersectionPoints(p.geometry, feature.geometry).map((point) => ({
+            type: 'Point' as const,
+            coordinates: point,
+          })),
+        })),
         rejectedAt: new Date().toISOString(),
       };
       rejected.push(record);

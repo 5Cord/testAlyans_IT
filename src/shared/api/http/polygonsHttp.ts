@@ -1,11 +1,13 @@
 import { API_URL } from '@/shared/config';
-import { closeRing, crossesAntimeridian, type LngLat } from '@/shared/lib';
-import type {
-  CreatePolygonInput,
-  CreatePolygonResult,
-  PolygonApi,
-  PolygonFeature,
-  RejectedPolygonRecord,
+import { closeRing, crossesAntimeridian, parseIntersectionCoords, type LngLat } from '@/shared/lib';
+import {
+  ApiError,
+  type CreatePolygonInput,
+  type CreatePolygonResult,
+  type PolygonApi,
+  type PolygonFeature,
+  type RejectedConflict,
+  type RejectedPolygonRecord,
 } from '../types';
 
 // фича территории в том виде, как её отдаёт бэк (drf-gis)
@@ -20,17 +22,24 @@ interface TerritoryFeature {
   };
 }
 
+// intersection_coords — вложенные координаты GEOS, формат описан в PROJECT_CONTRACT.md
+interface ConflictResponse {
+  id: number;
+  name: string;
+  intersection_coords?: unknown;
+}
+
 interface RejectedResponse {
   id: number;
   name: string;
   coords: LngLat[];
-  conflicts: { id: number; name: string }[];
+  conflicts: ConflictResponse[];
   created_at: string;
 }
 
 interface CreateErrorBody {
   detail?: string;
-  conflicts?: { id: number; name: string }[];
+  conflicts?: ConflictResponse[];
 }
 
 async function http<T>(path: string): Promise<T> {
@@ -60,6 +69,14 @@ function buildFeature(id: string, name: string, coordinates: LngLat[]): PolygonF
   };
 }
 
+function toConflicts(conflicts: ConflictResponse[]): RejectedConflict[] {
+  return conflicts.map((conflict) => ({
+    id: String(conflict.id),
+    name: conflict.name,
+    intersections: parseIntersectionCoords(conflict.intersection_coords),
+  }));
+}
+
 export const polygonsHttpApi: PolygonApi = {
   async getPolygons(): Promise<PolygonFeature[]> {
     const collection = await http<{ features: TerritoryFeature[] }>('/api/territories/');
@@ -70,7 +87,7 @@ export const polygonsHttpApi: PolygonApi = {
     const records = await http<RejectedResponse[]>('/api/rejected/');
     return records.map((record) => ({
       feature: buildFeature(String(record.id), record.name, record.coords),
-      conflictingIds: record.conflicts.map((c) => String(c.id)),
+      conflicts: toConflicts(record.conflicts),
       rejectedAt: record.created_at,
     }));
   },
@@ -100,11 +117,12 @@ export const polygonsHttpApi: PolygonApi = {
         status: 'rejected',
         rejected: {
           feature: buildFeature(crypto.randomUUID(), input.name, input.coordinates),
-          conflictingIds: body.conflicts.map((c) => String(c.id)),
+          conflicts: toConflicts(body.conflicts),
           rejectedAt: new Date().toISOString(),
         },
       };
     }
-    throw new Error(body?.detail ?? `HTTP ${response.status}`);
+    if (body?.detail) throw new ApiError(body.detail);
+    throw new Error(`HTTP ${response.status}`);
   },
 };

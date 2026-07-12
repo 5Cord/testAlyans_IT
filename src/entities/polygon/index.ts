@@ -4,5 +4,6 @@ export type {
   CreatePolygonResult,
   PolygonFeature,
   PolygonProperties,
+  RejectedConflict,
   RejectedPolygonRecord,
 } from '@/shared/api';
