@@ -43,7 +43,7 @@ function unwrapGeometry(geometry: Geometry): Geometry {
   return geometry;
 }
 
-// геометрии пересечения от backend2 (intersection_coords) — точки, линии и полигоны
+// геометрии пересечения от backend2 (intersection_coords) - точки, линии и полигоны
 function toIntersectionCollection(geometries: Geometry[]): FeatureCollection {
   return {
     type: 'FeatureCollection',
@@ -240,8 +240,8 @@ export function MapView() {
       return;
     }
 
-    // отклонённый красным, пересечённые оранжевым, области/точки пересечения — данные backend2;
-    // центрируемся по отклонённому — конфликтующие пересекают его, значит рядом
+    // отклонённый красным, пересечённые оранжевым, области/точки пересечения - данные backend2;
+    // центрируемся по отклонённому - конфликтующие пересекают его, значит рядом
     selectedSource.setData(toDisplayCollection(detail.conflicts));
     rejectedSource.setData(toDisplayCollection([detail.rejected]));
     intersectionsSource.setData(toIntersectionCollection(detail.intersections));
