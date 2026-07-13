@@ -24,7 +24,7 @@ export function validateLongitude(value: string): string | null {
   return null;
 }
 
-// строка — пара «широта, долгота», на выходе [lng, lat]
+// строка - пара "широта, долгота", на выходе [lng, lat]
 export function parsePointsText(text: string): { points: LngLat[] } | { error: string } {
   const lines = text
     .split('\n')
@@ -35,7 +35,7 @@ export function parsePointsText(text: string): { points: LngLat[] } | { error: s
   for (let i = 0; i < lines.length; i++) {
     const parts = lines[i].split(/[,;\s]+/).filter(Boolean);
     if (parts.length !== 2) {
-      return { error: `Строка ${i + 1}: ожидается пара «широта, долгота»` };
+      return { error: `Строка ${i + 1}: ожидается пара "широта, долгота"` };
     }
     const lat = Number(parts[0]);
     const lng = Number(parts[1]);

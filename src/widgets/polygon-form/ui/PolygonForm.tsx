@@ -123,7 +123,7 @@ export function PolygonForm() {
         </button>
 
         <label className={styles.field}>
-          <span className={styles.label}>Координаты (широта, долгота — по строке на точку)</span>
+          <span className={styles.label}>Координаты (широта, долгота - по строке на точку)</span>
           <textarea
             className={styles.textarea}
             rows={6}
@@ -135,7 +135,7 @@ export function PolygonForm() {
         </label>
 
         <button type="submit" className={styles.submitButton} disabled={isPending}>
-          {isPending ? 'Сохранение…' : 'Submit'}
+          {isPending ? 'Сохранение...' : 'Submit'}
         </button>
       </form>
     </CollapseCard>

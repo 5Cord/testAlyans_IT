@@ -21,7 +21,7 @@ describe('validateLongitude', () => {
 });
 
 describe('parsePointsText', () => {
-  it('разбирает «широта, долгота» в точки [lng, lat] с нормализацией', () => {
+  it('разбирает "широта, долгота" в точки [lng, lat] с нормализацией', () => {
     const result = parsePointsText('69.35, 174.2\n69.35, 204.96\n62.1, 205.49');
 
     expect(result).toHaveProperty('points');
