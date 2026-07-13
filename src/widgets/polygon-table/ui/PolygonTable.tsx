@@ -17,7 +17,7 @@ export function PolygonTable() {
 
   return (
     <CollapseCard title={`Полигоны${polygons?.length ? ` (${polygons.length})` : ''}`}>
-      {isPending && <p className={styles.hint}>Загрузка…</p>}
+      {isPending && <p className={styles.hint}>Загрузка...</p>}
       {!isPending && !polygons?.length && <p className={styles.hint}>Пока нет ни одного полигона</p>}
 
       {!!polygons?.length && (

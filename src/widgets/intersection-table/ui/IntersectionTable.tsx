@@ -39,7 +39,7 @@ export function IntersectionTable() {
 
   return (
     <CollapseCard title={`Таблица пересечений${rejected?.length ? ` (${rejected.length})` : ''}`}>
-      {isPending && <p className={styles.hint}>Загрузка…</p>}
+      {isPending && <p className={styles.hint}>Загрузка...</p>}
       {!isPending && !rejected?.length && <p className={styles.hint}>Отклонённых полигонов нет</p>}
 
       {!!rejected?.length && (

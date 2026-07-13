@@ -35,7 +35,7 @@ export function PolygonSearch() {
         <>
           {results.length === 0 && <p className={styles.hint}>Ничего не нашлось</p>}
           {results.length === 1 && (
-            <p className={styles.hint}>Найден полигон «{results[0].properties.name}»</p>
+            <p className={styles.hint}>Найден полигон "{results[0].properties.name}"</p>
           )}
           {results.length > 1 && (
             <ul className={styles.results}>
