@@ -171,13 +171,13 @@ describe('polygonsIntersect', () => {
 });
 
 describe('parseIntersectionCoords', () => {
-  it('пара чисел — точка', () => {
+  it('пара чисел - точка', () => {
     expect(parseIntersectionCoords([30.5, 60.1])).toEqual([
       { type: 'Point', coordinates: [30.5, 60.1] },
     ]);
   });
 
-  it('список пар — линия', () => {
+  it('список пар - линия', () => {
     const line = [
       [30, 60],
       [31, 60],
@@ -186,7 +186,7 @@ describe('parseIntersectionCoords', () => {
     expect(parseIntersectionCoords(line)).toEqual([{ type: 'LineString', coordinates: line }]);
   });
 
-  it('список колец — полигон (формат Polygon.coords из GEOS)', () => {
+  it('список колец - полигон (формат Polygon.coords из GEOS)', () => {
     const rings = [
       [
         [30, 60],
@@ -199,7 +199,7 @@ describe('parseIntersectionCoords', () => {
     expect(parseIntersectionCoords(rings)).toEqual([{ type: 'Polygon', coordinates: rings }]);
   });
 
-  it('мультиполигон — список полигонов', () => {
+  it('мультиполигон - список полигонов', () => {
     const polygonA = [
       [
         [0, 0],

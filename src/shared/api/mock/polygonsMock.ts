@@ -84,7 +84,7 @@ export const polygonsMockApi: PolygonApi = {
     if (conflicts.length > 0) {
       const record: RejectedPolygonRecord = {
         feature,
-        // DEV ONLY: в mock-режиме пересечения считает turf; в проде источник истины —
+        // DEV ONLY: в mock-режиме пересечения считает turf; в проде источник истины -
         // backend2 (intersection_coords)
         conflicts: conflicts.map((p) => ({
           id: p.properties.id,

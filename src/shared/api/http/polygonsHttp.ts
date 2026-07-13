@@ -22,7 +22,7 @@ interface TerritoryFeature {
   };
 }
 
-// intersection_coords — вложенные координаты GEOS, формат описан в PROJECT_CONTRACT.md
+// intersection_coords - вложенные координаты GEOS, тип геометрии восстанавливается по вложенности
 interface ConflictResponse {
   id: number;
   name: string;
